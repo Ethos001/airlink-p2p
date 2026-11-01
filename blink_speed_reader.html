@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BLink Speed Reader</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'OpenDyslexic';
+      src: url('https://cdn.jsdelivr.net/npm/opendyslexic@1.0.3/open-dyslexic-regular.path.otf');
+    }
+    .font-serif-classic { font-family: 'Lora', Georgia, serif; }
+    .font-mono-code { font-family: 'JetBrains Mono', monospace; }
+    .font-sans-clean { font-family: 'Inter', sans-serif; }
+    .font-dyslexic { font-family: 'OpenDyslexic', sans-serif; }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #3730a3; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4338ca; }
+  </style>
+</head>
+<body class="bg-[#0b0819] text-gray-100 min-h-screen font-serif-classic flex flex-col justify-between selection:bg-indigo-900 selection:text-white transition-colors duration-300" id="appBody">
+
+  <!-- TOP HEADER / CONTROLS BAR -->
+  <header class="p-4 border-b border-indigo-950/80 bg-[#0d0a21]/90 backdrop-blur flex flex-wrap items-center justify-between gap-4 z-10 transition-opacity duration-300" id="mainHeader">
+    <div class="flex items-center gap-3">
+      <!-- BLink Logo SVG Icon -->
+      <div class="flex items-center gap-2">
+        <svg class="w-8 h-8 text-indigo-400 fill-current drop-shadow-[0_0_12px_rgba(99,102,241,0.6)]" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <!-- Top Rays -->
+          <path d="M45 10 H55 V35 H45 Z" />
+          <path d="M22 22 L36 36 L29 43 L15 29 Z" />
+          <path d="M78 22 L85 29 L71 43 L64 36 Z" />
+          <path d="M10 45 H35 V55 H10 Z" />
+          <path d="M65 45 H90 V55 H65 Z" />
+          <!-- Center Diamond Star -->
+          <path d="M50 35 L62 50 L50 65 L38 50 Z" class="fill-white" />
+          <!-- Bottom Curved Petals -->
+          <path d="M25 60 C35 60 45 70 48 85 C35 85 25 75 25 60 Z" opacity="0.9" />
+          <path d="M75 60 C75 75 65 85 52 85 C55 70 65 60 75 60 Z" opacity="0.9" />
+        </svg>
+        <span class="text-2xl font-extrabold tracking-tight text-white font-sans-clean">B<span class="text-indigo-400">Link</span></span>
+      </div>
+    </div>
+
+    <!-- Quick Controls -->
+    <div class="flex items-center gap-4 flex-wrap">
+      <!-- WPM Control -->
+      <div class="flex items-center bg-[#151032] border border-indigo-900/50 rounded-lg p-1">
+        <button id="btnWpmDown" class="px-2 py-1 text-indigo-300 hover:text-white hover:bg-indigo-900/50 rounded font-mono font-bold text-sm">-25</button>
+        <div class="px-3 py-1 font-mono font-bold text-indigo-400 min-w-[90px] text-center" id="wpmDisplay">300 WPM</div>
+        <button id="btnWpmUp" class="px-2 py-1 text-indigo-300 hover:text-white hover:bg-indigo-900/50 rounded font-mono font-bold text-sm">+25</button>
+      </div>
+
+      <!-- Chunk Size -->
+      <div class="flex items-center bg-[#151032] border border-indigo-900/50 rounded-lg p-1">
+        <span class="text-xs font-mono text-indigo-300/70 px-2">Chunk:</span>
+        <button class="chunk-btn px-2 py-1 text-xs font-mono rounded bg-indigo-600 text-white font-bold" data-chunk="1">1</button>
+        <button class="chunk-btn px-2 py-1 text-xs font-mono rounded text-indigo-300 hover:text-white" data-chunk="2">2</button>
+        <button class="chunk-btn px-2 py-1 text-xs font-mono rounded text-indigo-300 hover:text-white" data-chunk="3">3</button>
+        <button class="chunk-btn px-2 py-1 text-xs font-mono rounded text-indigo-300 hover:text-white" data-chunk="4">4</button>
+      </div>
+
+      <!-- Toggle Text Input Area -->
+      <button id="btnToggleEditor" class="bg-[#151032] hover:bg-indigo-900/40 border border-indigo-900/60 text-indigo-200 px-3 py-2 rounded-lg text-sm font-sans flex items-center gap-1.5 transition">
+        <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Edit Text
+      </button>
+
+      <!-- Action Buttons -->
+      <button id="btnPlayPause" class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold px-5 py-2 rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-indigo-950/50">
+        <svg id="playIcon" class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        <svg id="pauseIcon" class="w-4 h-4 fill-current hidden" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+        <span id="playBtnText">Start</span>
+      </button>
+
+      <button id="btnTextOverview" class="bg-[#151032] hover:bg-indigo-900/40 border border-indigo-900/60 text-indigo-200 px-3 py-2 rounded-lg text-sm font-sans flex items-center gap-1.5 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+        Word List
+      </button>
+
+      <button id="btnSettings" class="bg-[#151032] hover:bg-indigo-900/40 border border-indigo-900/60 text-indigo-200 p-2 rounded-lg transition">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT SPLIT LAYOUT -->
+  <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+    
+    <!-- CONVENIENT TEXT INPUT & EDIT PANEL -->
+    <aside id="textEditorPanel" class="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-indigo-950 bg-[#0d0a21] p-4 flex flex-col gap-3 z-10 transition-all duration-300">
+      <div class="flex items-center justify-between border-b border-indigo-900/40 pb-2">
+        <h2 class="text-sm font-bold text-indigo-200 font-sans uppercase tracking-wider flex items-center gap-2">
+          <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          Type / Paste Text Here
+        </h2>
+        <span id="editorStats" class="text-xs font-mono text-indigo-400/60">0 words</span>
+      </div>
+
+      <!-- Main Text Box -->
+      <textarea id="mainTextArea" placeholder="Type or paste any story, article, or document here..." class="flex-1 w-full bg-[#130f2e] border border-indigo-900/50 rounded-lg p-3 text-sm text-indigo-100 placeholder-indigo-400/40 focus:outline-none focus:border-indigo-500 font-sans resize-none min-h-[160px] leading-relaxed"></textarea>
+
+      <!-- Action Row -->
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <button id="btnApplyText" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all font-sans">
+            Apply Text
+          </button>
+          <button id="btnClearText" class="bg-[#1b163d] hover:bg-indigo-900/50 text-indigo-300 text-xs font-medium px-3 py-2 rounded-lg font-sans">
+            Clear
+          </button>
+        </div>
+
+        <label class="bg-[#130f2e] hover:bg-indigo-900/40 border border-indigo-900/50 text-indigo-300 px-3 py-2 rounded-lg text-xs font-sans cursor-pointer flex items-center gap-1 transition">
+          <svg class="w-3.5 h-3.5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+          .txt File
+          <input type="file" id="fileInput" accept=".txt,.md" class="hidden">
+        </label>
+      </div>
+    </aside>
+
+    <!-- MAIN RSVP DISPLAY CANVAS -->
+    <main class="flex-1 flex flex-col items-center justify-center p-4 relative overflow-hidden my-auto" id="displayArea">
+      
+      <!-- Focus Hairline Guides -->
+      <div id="focusGuides" class="absolute inset-x-0 mx-auto w-full max-w-4xl flex flex-col items-center justify-between pointer-events-none transition-opacity duration-300" style="height: 220px;">
+        <div class="w-full flex items-center justify-center gap-2">
+          <div class="h-[1px] bg-indigo-900/40 flex-1"></div>
+          <div class="w-2 h-2 bg-indigo-500 rotate-45 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
+          <div class="h-[1px] bg-indigo-900/40 flex-1"></div>
+        </div>
+        <div class="w-full flex items-center justify-center gap-2">
+          <div class="h-[1px] bg-indigo-900/40 flex-1"></div>
+          <div class="w-2 h-2 bg-indigo-500 rotate-45 shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
+          <div class="h-[1px] bg-indigo-900/40 flex-1"></div>
+        </div>
+      </div>
+
+      <!-- RSVP SINGLE WORD DISPLAY CONTAINER (ORP Fixed Alignment Grid) -->
+      <div id="singleWordContainer" class="w-full max-w-5xl my-auto py-12 flex justify-center items-center text-6xl sm:text-7xl md:text-8xl select-none font-serif-classic tracking-normal">
+        <div id="wordLeft" class="w-1/2 text-right text-white whitespace-pre font-serif-classic">BL</div>
+        <div id="wordOrp" class="w-[1ch] text-center text-indigo-400 font-bold font-serif-classic drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]">i</div>
+        <div id="wordRight" class="w-1/2 text-left text-white whitespace-pre font-serif-classic">nk</div>
+      </div>
+
+      <!-- MULTI-WORD CHUNK CONTAINER (2-4 Words) -->
+      <div id="multiChunkContainer" class="hidden w-full max-w-4xl mx-auto my-auto py-12 flex justify-center items-center text-center text-4xl sm:text-5xl md:text-6xl text-white font-serif-classic px-6 leading-tight max-w-[90vw] overflow-hidden">
+        <span id="chunkText" class="break-words">Welcome to BLink Speed Reader</span>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- BOTTOM HUD -->
+  <footer class="p-4 border-t border-indigo-950 bg-[#0d0a21]/90 backdrop-blur z-10 transition-opacity duration-300" id="mainFooter">
+    <div class="max-w-5xl mx-auto flex flex-col gap-3">
+      
+      <!-- Progress Bar -->
+      <div class="w-full bg-[#130f2e] rounded-full h-2 overflow-hidden border border-indigo-900/50 cursor-pointer" id="progressBarContainer">
+        <div id="progressBar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full w-0 transition-all duration-100"></div>
+      </div>
+
+      <!-- HUD Metrics & Quick Controls -->
+      <div class="flex items-center justify-between text-xs font-mono text-indigo-300/70">
+        <div class="flex items-center gap-4">
+          <span>Word: <strong id="hudWordIdx" class="text-indigo-100">0</strong> / <span id="hudWordTotal">0</span></span>
+          <span>Progress: <strong id="hudPercent" class="text-indigo-100">0%</strong></span>
+          <span>Time Left: <strong id="hudTimeLeft" class="text-indigo-100">0m 0s</strong></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="hidden sm:inline">Shortcuts: <kbd class="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-900/50 text-indigo-200">Space</kbd> Play/Pause &nbsp;<kbd class="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-900/50 text-indigo-200">← →</kbd> Skip &nbsp;<kbd class="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-900/50 text-indigo-200">↑ ↓</kbd> Speed</span>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- FULL TEXT OVERVIEW MODAL / DRAWER -->
+  <div id="overviewModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex justify-end">
+    <div class="w-full max-w-2xl bg-[#0d0a21] border-l border-indigo-900/60 h-full p-6 flex flex-col">
+      <div class="flex items-center justify-between pb-4 border-b border-indigo-900/40">
+        <h2 class="text-lg font-bold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+          Full Text Context Overview
+        </h2>
+        <button id="btnCloseOverview" class="text-indigo-300 hover:text-white text-2xl font-bold">&times;</button>
+      </div>
+      <p class="text-xs text-indigo-300/70 my-3">Click on any word to jump BLink reader instantly to that position.</p>
+      <div id="overviewContent" class="flex-1 overflow-y-auto font-serif-classic text-indigo-100 leading-relaxed space-y-4 p-2 text-base">
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="w-full max-w-lg bg-[#0d0a21] border border-indigo-900/60 rounded-xl p-6 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-indigo-900/40 pb-3">
+        <h2 class="text-lg font-bold text-white">BLink Settings</h2>
+        <button id="btnCloseSettings" class="text-indigo-300 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <div class="space-y-4 text-sm font-sans">
+        <div>
+          <label class="block text-indigo-300 mb-1">Typography Style</label>
+          <select id="fontSelect" class="w-full bg-[#130f2e] border border-indigo-900/50 rounded px-3 py-2 text-indigo-100">
+            <option value="font-serif-classic">Classic Serif (Lora / Georgia)</option>
+            <option value="font-mono-code">Monospaced (JetBrains Mono)</option>
+            <option value="font-sans-clean">Clean Sans (Inter)</option>
+            <option value="font-dyslexic">Dyslexia Friendly (OpenDyslexic)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-indigo-300 mb-1">ORP Focal Character Color</label>
+          <div class="flex gap-3">
+            <button class="orp-color-btn w-8 h-8 rounded-full bg-indigo-400 ring-2 ring-white" data-color="text-indigo-400"></button>
+            <button class="orp-color-btn w-8 h-8 rounded-full bg-purple-500" data-color="text-purple-500"></button>
+            <button class="orp-color-btn w-8 h-8 rounded-full bg-red-500" data-color="text-red-500"></button>
+            <button class="orp-color-btn w-8 h-8 rounded-full bg-emerald-400" data-color="text-emerald-400"></button>
+            <button class="orp-color-btn w-8 h-8 rounded-full bg-amber-400" data-color="text-amber-400"></button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-indigo-300 mb-1">Canvas Theme</label>
+          <select id="themeSelect" class="w-full bg-[#130f2e] border border-indigo-900/50 rounded px-3 py-2 text-indigo-100">
+            <option value="bg-[#0b0819] text-white">Royal Indigo Dark (Default)</option>
+            <option value="bg-black text-white">True Black (High Contrast)</option>
+            <option value="bg-[#121212] text-[#e0e0e0]">OLED Deep Dark</option>
+            <option value="bg-[#1b182b] text-[#e8e0d5]">Warm Sepia Dark</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-indigo-300 mb-1">Punctuation Pause Multipliers</label>
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <span class="text-xs text-indigo-400/60">Sentence (.?!)</span>
+              <input type="number" id="delayTerminal" value="2.5" step="0.1" class="w-full bg-[#130f2e] border border-indigo-900/50 rounded px-2 py-1 text-indigo-100">
+            </div>
+            <div>
+              <span class="text-xs text-indigo-400/60">Clause (,;:)</span>
+              <input type="number" id="delayClause" value="1.5" step="0.1" class="w-full bg-[#130f2e] border border-indigo-900/50 rounded px-2 py-1 text-indigo-100">
+            </div>
+            <div>
+              <span class="text-xs text-indigo-400/60">Connective (—)</span>
+              <input type="number" id="delayConnective" value="1.2" step="0.1" class="w-full bg-[#130f2e] border border-indigo-900/50 rounded px-2 py-1 text-indigo-100">
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-indigo-900/40">
+          <label class="flex items-center gap-2 text-indigo-200 cursor-pointer">
+            <input type="checkbox" id="toggleSoftStart" checked class="rounded bg-[#130f2e] border-indigo-900 text-indigo-600">
+            <span>Enable Soft Start (Velocity Speed Ramping)</span>
+          </label>
+          <label class="flex items-center gap-2 text-indigo-200 cursor-pointer">
+            <input type="checkbox" id="toggleGuides" checked class="rounded bg-[#130f2e] border-indigo-900 text-indigo-600">
+            <span>Show Target Horizontal Focus Lines</span>
+          </label>
+          <label class="flex items-center gap-2 text-indigo-200 cursor-pointer">
+            <input type="checkbox" id="toggleFocusMode" class="rounded bg-[#130f2e] border-indigo-900 text-indigo-600">
+            <span>Focus Mode (Hide Controls While Playing)</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-indigo-900/40 flex justify-end">
+        <button id="btnSaveSettings" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-4 py-2 rounded-lg">Apply Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPT ENGINE -->
+  <script>
+    const INITIAL_TEXT = `Welcome to BLink, the modern speed reading app designed to elevate your reading efficiency. Using Rapid Serial Visual Presentation (RSVP), BLink presents text one focal word at a time directly in your optical sweet spot. This eliminates unnecessary saccadic eye movements and regressions, empowering you to comfortably read at speeds from 300 to over 1000 words per minute!`;
+
+    const state = {
+      rawText: INITIAL_TEXT,
+      words: [],
+      currentIndex: 0,
+      isPlaying: false,
+      wpm: 300,
+      chunkSize: 1,
+      timer: null,
+      orpColorClass: 'text-indigo-400',
+      fontClass: 'font-serif-classic',
+      softStart: true,
+      softStartCount: 0,
+      delays: {
+        terminal: 2.5,
+        clause: 1.5,
+        connective: 1.2
+      },
+      focusMode: false,
+      showGuides: true
+    };
+
+    const wordLeftEl = document.getElementById('wordLeft');
+    const wordOrpEl = document.getElementById('wordOrp');
+    const wordRightEl = document.getElementById('wordRight');
+    const singleWordContainer = document.getElementById('singleWordContainer');
+    const multiChunkContainer = document.getElementById('multiChunkContainer');
+    const chunkTextEl = document.getElementById('chunkText');
+
+    const wpmDisplay = document.getElementById('wpmDisplay');
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const playBtnText = document.getElementById('playBtnText');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+
+    const hudWordIdx = document.getElementById('hudWordIdx');
+    const hudWordTotal = document.getElementById('hudWordTotal');
+    const hudPercent = document.getElementById('hudPercent');
+    const hudTimeLeft = document.getElementById('hudTimeLeft');
+    const progressBar = document.getElementById('progressBar');
+
+    const mainTextArea = document.getElementById('mainTextArea');
+    const editorStats = document.getElementById('editorStats');
+
+    function calculateORPIndex(word) {
+      const len = word.length;
+      if (len <= 1) return 0;
+      if (len <= 5) return 1;
+      if (len <= 9) return 2;
+      if (len <= 13) return 3;
+      return 4;
+    }
+
+    function parseText(raw) {
+      if (!raw || !raw.trim()) return [];
+      const cleaned = raw.replace(/<[^>]*>/g, '')
+                         .replace(/[\r\n]+/g, ' ')
+                         .replace(/\s+/g, ' ')
+                         .trim();
+      return cleaned.split(' ');
+    }
+
+    function updateEditorStats() {
+      const words = parseText(mainTextArea.value);
+      editorStats.textContent = `${words.length} words`;
+    }
+
+    function renderCurrentWord() {
+      if (state.words.length === 0) {
+        wordLeftEl.textContent = "BL";
+        wordOrpEl.textContent = "i";
+        wordRightEl.textContent = "nk";
+        return;
+      }
+
+      if (state.currentIndex >= state.words.length) {
+        pause();
+        state.currentIndex = state.words.length - 1;
+      }
+
+      if (state.chunkSize === 1) {
+        singleWordContainer.classList.remove('hidden');
+        singleWordContainer.classList.add('flex');
+        multiChunkContainer.classList.add('hidden');
+
+        const currentWord = state.words[state.currentIndex] || "";
+        const orpIdx = calculateORPIndex(currentWord);
+
+        const leftPart = currentWord.slice(0, orpIdx);
+        const orpChar = currentWord.charAt(orpIdx) || "";
+        const rightPart = currentWord.slice(orpIdx + 1);
+
+        wordLeftEl.textContent = leftPart;
+        wordOrpEl.textContent = orpChar;
+        wordRightEl.textContent = rightPart;
+      } else {
+        singleWordContainer.classList.add('hidden');
+        singleWordContainer.classList.remove('flex');
+        multiChunkContainer.classList.remove('hidden');
+
+        const sliceEnd = Math.min(state.currentIndex + state.chunkSize, state.words.length);
+        const chunkWords = state.words.slice(state.currentIndex, sliceEnd);
+        chunkTextEl.textContent = chunkWords.join(' ');
+      }
+
+      updateHUD();
+    }
+
+    function updateHUD() {
+      const total = state.words.length;
+      const curr = total > 0 ? state.currentIndex + 1 : 0;
+      const pct = total > 0 ? Math.round((curr / total) * 100) : 0;
+
+      hudWordIdx.textContent = curr;
+      hudWordTotal.textContent = total;
+      hudPercent.textContent = pct + '%';
+      progressBar.style.width = pct + '%';
+
+      const wordsLeft = total - state.currentIndex;
+      const minutesLeft = wordsLeft / state.wpm;
+      const totalSecs = Math.ceil(minutesLeft * 60);
+      const m = Math.floor(totalSecs / 60);
+      const s = totalSecs % 60;
+      hudTimeLeft.textContent = `${m}m ${s}s`;
+    }
+
+    function getWordDelay() {
+      const baseMs = (60 / state.wpm) * 1000;
+      const word = state.words[state.currentIndex] || "";
+
+      let multiplier = 1.0;
+
+      if (/[.?!]$/.test(word)) {
+        multiplier *= state.delays.terminal;
+      } else if (/[,;:]$/.test(word)) {
+        multiplier *= state.delays.clause;
+      } else if (/[—-]/.test(word)) {
+        multiplier *= state.delays.connective;
+      }
+
+      if (word.length > 10) {
+        multiplier += (word.length - 10) * 0.05;
+      }
+
+      if (state.softStart && state.softStartCount < 5) {
+        const rampFactor = 0.5 + (state.softStartCount * 0.1);
+        multiplier /= rampFactor;
+      }
+
+      return baseMs * multiplier;
+    }
+
+    function tick() {
+      if (!state.isPlaying) return;
+
+      renderCurrentWord();
+
+      const delay = getWordDelay();
+      state.softStartCount++;
+
+      state.timer = setTimeout(() => {
+        state.currentIndex += state.chunkSize;
+        if (state.currentIndex >= state.words.length) {
+          pause();
+          state.currentIndex = state.words.length - 1;
+          renderCurrentWord();
+        } else {
+          tick();
+        }
+      }, delay);
+    }
+
+    function play() {
+      if (state.words.length === 0) return;
+      if (state.currentIndex >= state.words.length - 1) {
+        state.currentIndex = 0;
+      }
+      state.isPlaying = true;
+      state.softStartCount = 0;
+      playBtnText.textContent = "Pause";
+      playIcon.classList.add('hidden');
+      pauseIcon.classList.remove('hidden');
+
+      if (state.focusMode) {
+        document.getElementById('mainHeader').classList.add('opacity-10');
+        document.getElementById('mainFooter').classList.add('opacity-10');
+      }
+
+      tick();
+    }
+
+    function pause() {
+      state.isPlaying = false;
+      if (state.timer) clearTimeout(state.timer);
+      playBtnText.textContent = "Start";
+      playIcon.classList.remove('hidden');
+      pauseIcon.classList.add('hidden');
+
+      document.getElementById('mainHeader').classList.remove('opacity-10');
+      document.getElementById('mainFooter').classList.remove('opacity-10');
+    }
+
+    function togglePlay() {
+      if (state.isPlaying) pause();
+      else play();
+    }
+
+    function init() {
+      mainTextArea.value = INITIAL_TEXT;
+      state.words = parseText(INITIAL_TEXT);
+      updateEditorStats();
+      renderCurrentWord();
+
+      btnPlayPause.addEventListener('click', togglePlay);
+
+      document.getElementById('btnApplyText').addEventListener('click', () => {
+        const txt = mainTextArea.value.trim();
+        state.rawText = txt;
+        state.words = parseText(txt);
+        state.currentIndex = 0;
+        pause();
+        renderCurrentWord();
+      });
+
+      document.getElementById('btnClearText').addEventListener('click', () => {
+        mainTextArea.value = '';
+        updateEditorStats();
+      });
+
+      mainTextArea.addEventListener('input', updateEditorStats);
+
+      document.getElementById('btnToggleEditor').addEventListener('click', () => {
+        const panel = document.getElementById('textEditorPanel');
+        panel.classList.toggle('hidden');
+      });
+
+      document.getElementById('btnWpmDown').addEventListener('click', () => {
+        state.wpm = Math.max(50, state.wpm - 25);
+        wpmDisplay.textContent = state.wpm + ' WPM';
+        updateHUD();
+      });
+      document.getElementById('btnWpmUp').addEventListener('click', () => {
+        state.wpm = Math.min(1500, state.wpm + 25);
+        wpmDisplay.textContent = state.wpm + ' WPM';
+        updateHUD();
+      });
+
+      document.querySelectorAll('.chunk-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.chunk-btn').forEach(b => {
+            b.classList.remove('bg-indigo-600', 'text-white', 'font-bold');
+            b.classList.add('text-indigo-300');
+          });
+          e.target.classList.add('bg-indigo-600', 'text-white', 'font-bold');
+          e.target.classList.remove('text-indigo-300');
+
+          state.chunkSize = parseInt(e.target.getAttribute('data-chunk'));
+          renderCurrentWord();
+        });
+      });
+
+      document.getElementById('fileInput').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            state.rawText = evt.target.result;
+            mainTextArea.value = state.rawText;
+            state.words = parseText(state.rawText);
+            state.currentIndex = 0;
+            updateEditorStats();
+            pause();
+            renderCurrentWord();
+          };
+          reader.readAsText(file);
+        }
+      });
+
+      document.getElementById('progressBarContainer').addEventListener('click', (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const clickRatio = (e.clientX - rect.left) / rect.width;
+        state.currentIndex = Math.floor(clickRatio * state.words.length);
+        renderCurrentWord();
+      });
+
+      const overviewModal = document.getElementById('overviewModal');
+      const overviewContent = document.getElementById('overviewContent');
+
+      document.getElementById('btnTextOverview').addEventListener('click', () => {
+        pause();
+        overviewContent.innerHTML = '';
+        state.words.forEach((w, idx) => {
+          const span = document.createElement('span');
+          span.textContent = w + ' ';
+          span.className = `cursor-pointer hover:bg-indigo-900/60 hover:text-white px-1 py-0.5 rounded transition ${idx === state.currentIndex ? 'bg-indigo-600 text-white font-bold' : ''}`;
+          span.addEventListener('click', () => {
+            state.currentIndex = idx;
+            renderCurrentWord();
+            overviewModal.classList.add('hidden');
+          });
+          overviewContent.appendChild(span);
+        });
+        overviewModal.classList.remove('hidden');
+      });
+
+      document.getElementById('btnCloseOverview').addEventListener('click', () => {
+        overviewModal.classList.add('hidden');
+      });
+
+      const settingsModal = document.getElementById('settingsModal');
+      document.getElementById('btnSettings').addEventListener('click', () => {
+        pause();
+        settingsModal.classList.remove('hidden');
+      });
+      document.getElementById('btnCloseSettings').addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+      });
+
+      document.querySelectorAll('.orp-color-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          document.querySelectorAll('.orp-color-btn').forEach(b => b.classList.remove('ring-2', 'ring-white'));
+          e.target.classList.add('ring-2', 'ring-white');
+          const color = e.target.getAttribute('data-color');
+          wordOrpEl.className = `w-[1ch] text-center ${color} font-bold font-serif-classic drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]`;
+          state.orpColorClass = color;
+        });
+      });
+
+      document.getElementById('fontSelect').addEventListener('change', (e) => {
+        const font = e.target.value;
+        wordLeftEl.className = `w-1/2 text-right text-white whitespace-pre ${font}`;
+        wordOrpEl.className = `w-[1ch] text-center ${state.orpColorClass} font-bold ${font} drop-shadow-[0_0_12px_rgba(99,102,241,0.5)]`;
+        wordRightEl.className = `w-1/2 text-left text-white whitespace-pre ${font}`;
+        chunkTextEl.className = `break-words ${font}`;
+      });
+
+      document.getElementById('themeSelect').addEventListener('change', (e) => {
+        document.getElementById('appBody').className = `${e.target.value} min-h-screen flex flex-col justify-between transition-colors duration-300`;
+      });
+
+      document.getElementById('btnSaveSettings').addEventListener('click', () => {
+        state.delays.terminal = parseFloat(document.getElementById('delayTerminal').value) || 2.5;
+        state.delays.clause = parseFloat(document.getElementById('delayClause').value) || 1.5;
+        state.delays.connective = parseFloat(document.getElementById('delayConnective').value) || 1.2;
+        state.softStart = document.getElementById('toggleSoftStart').checked;
+        state.focusMode = document.getElementById('toggleFocusMode').checked;
+        
+        const showGuides = document.getElementById('toggleGuides').checked;
+        document.getElementById('focusGuides').style.display = showGuides ? 'flex' : 'none';
+
+        settingsModal.classList.add('hidden');
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return;
+
+        if (e.code === 'Space') {
+          e.preventDefault();
+          togglePlay();
+        } else if (e.code === 'ArrowLeft') {
+          e.preventDefault();
+          state.currentIndex = Math.max(0, state.currentIndex - 5);
+          renderCurrentWord();
+        } else if (e.code === 'ArrowRight') {
+          e.preventDefault();
+          state.currentIndex = Math.min(state.words.length - 1, state.currentIndex + 5);
+          renderCurrentWord();
+        } else if (e.code === 'ArrowUp') {
+          e.preventDefault();
+          state.wpm = Math.min(1500, state.wpm + 25);
+          wpmDisplay.textContent = state.wpm + ' WPM';
+          updateHUD();
+        } else if (e.code === 'ArrowDown') {
+          e.preventDefault();
+          state.wpm = Math.max(50, state.wpm - 25);
+          wpmDisplay.textContent = state.wpm + ' WPM';
+          updateHUD();
+        } else if (e.code === 'Escape') {
+          pause();
+          overviewModal.classList.add('hidden');
+          settingsModal.classList.add('hidden');
+        }
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
